@@ -60,51 +60,51 @@ private:
 
     void mapCallback(const custom_messages::msg::Map::SharedPtr msg)
     {
-        RCLCPP_INFO(this->get_logger(), "Received map from Boing, starting reprocessing...");
+        RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 5000, "Received map from Boing, starting reprocessing (silenced spam)...");
         map = *msg; // Make a copy of the received map
         modifyMap(map);
         map_publisher_->publish(map);
-        const int grid_size = 41;
-        char grid[grid_size][grid_size];
+        // const int grid_size = 41;
+        // char grid[grid_size][grid_size];
 
-        for (int i = 0; i < grid_size; ++i) {
-            for (int j = 0; j < grid_size; ++j) {
-                grid[i][j] = ' ';
-            }
-        }
+        // for (int i = 0; i < grid_size; ++i) {
+        //     for (int j = 0; j < grid_size; ++j) {
+        //         grid[i][j] = ' ';
+        //     }
+        // }
 
-        double scale = (double)(grid_size - 1) / (2.0 * cam_distance);
-        int center_grid = grid_size / 2;
+        // double scale = (double)(grid_size - 1) / (2.0 * cam_distance);
+        // int center_grid = grid_size / 2;
 
         custom_messages::msg::Object optimal_points = map.objects[0];
 
         //std::cout <<map.objects.size() << std::endl;
-        std::cout <<map.objects[0].possible_trajectories.size() << std::endl;
+        // std::cout <<map.objects[0].possible_trajectories.size() << std::endl;
 
         for (auto& circumference : optimal_points.possible_trajectories){
             for (const auto& point : circumference.circumference) {
-                int grid_x = static_cast<int>(round(center_grid + (point.x) * scale));
-                int grid_y = static_cast<int>(round(center_grid + (point.y) * scale));
+                // int grid_x = static_cast<int>(round(center_grid + (point.x) * scale));
+                // int grid_y = static_cast<int>(round(center_grid + (point.y) * scale));
 
-                if (grid_x >= 0 && grid_x < grid_size && grid_y >= 0 && grid_y < grid_size) {
-                    if (point.optimality == 1.0) {
-                        grid[grid_y][grid_x] = '1';
-                    } else {
-                        grid[grid_y][grid_x] = '0';
-                    }
-                }
-                std::cout << "x: " << point.x << ", y: " << point.y << ", z: " << point.z << ", optimality: " << point.optimality << std::endl;
+                // if (grid_x >= 0 && grid_x < grid_size && grid_y >= 0 && grid_y < grid_size) {
+                //     if (point.optimality == 1.0) {
+                //         grid[grid_y][grid_x] = '1';
+                //     } else {
+                //         grid[grid_y][grid_x] = '0';
+                //     }
+                // }
+                // std::cout << "x: " << point.x << ", y: " << point.y << ", z: " << point.z << ", optimality: " << point.optimality << std::endl;
             }
 
-            std::cout << "2D Visualization (1 = Reachable, 0 = Not Reachable):\n";
-            for (int i = grid_size - 1; i >= 0; --i) {
-                for (int j = 0; j < grid_size; ++j) {
-                    std::cout << grid[i][j] << " ";
-                }
-                std::cout << std::endl;
-            }
+            // std::cout << "2D Visualization (1 = Reachable, 0 = Not Reachable):\n";
+            // for (int i = grid_size - 1; i >= 0; --i) {
+            //     for (int j = 0; j < grid_size; ++j) {
+            //         std::cout << grid[i][j] << " ";
+            //     }
+            //     std::cout << std::endl;
+            // }
         }
-        RCLCPP_INFO(this->get_logger(), "Map reprocessed and published on reworked_map.");
+        RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 5000, "Map reprocessed and published on reworked_map.");
     }
 };
 
@@ -113,7 +113,7 @@ void generateOptimalCircumferences(custom_messages::msg::Object& plant, double r
     std::vector<custom_messages::msg::Point> plant_centers = calculateCenters(plant);
     double angle_increment = 2.0 * M_PI / num_points;
 
-    std::cout << plant_centers.size() << std::endl;
+    // std::cout << plant_centers.size() << std::endl;
 
     for (auto target_center : plant_centers){
 
@@ -184,7 +184,7 @@ void pointsInsideOtherObjects(custom_messages::msg::Object& plant, const custom_
 std::vector<custom_messages::msg::Point> calculateCenters(custom_messages::msg::Object& plant) {
     custom_messages::msg::Point low_left = plant.shape.low_left;
     custom_messages::msg::Point top_right = plant.shape.top_right;
-    std::cout << "xx :" << low_left.x << " yy:" << low_left.y << " zz:" << top_right.x << std::endl;
+    // std::cout << "xx :" << low_left.x << " yy:" << low_left.y << " zz:" << top_right.x << std::endl;
 
     double height = top_right.z - low_left.z;
     std::vector<custom_messages::msg::Point> centers;
@@ -213,7 +213,7 @@ std::vector<custom_messages::msg::Point> calculateCenters(custom_messages::msg::
             } else {
                 center.z = top_right.z + (0.25) * field_of_vision_z; // the last circle is raised compared to the plant
             }
-            std::cout << "x :" << center.x << " y:" << center.y << " z:" << center.z << std::endl;
+            // std::cout << "x :" << center.x << " y:" << center.y << " z:" << center.z << std::endl;
             centers.push_back(center);
         }
     }

@@ -17,6 +17,10 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(shape_msgs REQUIRED)
 find_package(moveit_msgs REQUIRED)
+find_package(tl_expected REQUIRED)
+if(NOT TARGET tl::expected)
+  add_library(tl::expected ALIAS tl_expected::tl_expected)
+endif()
 
 find_package(PythonLibs REQUIRED) # Necessario per i file di launch Python
 find_package(ament_cmake_python REQUIRED) # Necessario per il supporto di Python Ament

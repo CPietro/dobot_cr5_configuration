@@ -1,0 +1,122 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf version="1.6">
+  <model name="plant_1_wpot">
+    <static>1</static>
+    <allow_auto_disable>1</allow_auto_disable>
+
+    <link name="pot_base_link">
+      <pose frame="">0 0 0 0 -0 0</pose>
+      <visual name="visual">
+        <pose frame="">0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>model://pot_flower/meshes/pot_base.dae</uri>
+            <scale>0.3 0.3 0.3</scale>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.8156 0.6470 0.1607 1</ambient>
+          <diffuse>0.8156 0.6470 0.1607 1</diffuse>
+          <specular>0.01 0.01 0.01 1</specular>
+        </material>
+      </visual>
+      <collision name="collision">
+        <pose>0 0 0.1 0 0 0</pose>
+        <geometry><cylinder><radius>0.11</radius><length>0.2</length></cylinder>
+        
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="pot_soil_link">
+      <pose frame="">0 0 0 0 -0 0</pose>
+      <visual name="visual">
+        <pose frame="">0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>model://pot_flower/meshes/pot_soil.dae</uri>
+            <scale>0.3 0.3 0.3</scale>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.4666 0.4196 0.274509804 1</ambient>
+          <diffuse>0.4666 0.4196 0.274509804 1</diffuse>
+          <specular>0.01 0.01 0.01 1</specular>
+        </material>
+      </visual>
+      </link>
+
+    <link name="leaf_1">
+      <pose frame="">-0.00528 -0.00957 0.0424 0 -0 1.12457</pose>
+       <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://plant_1/meshes/leaf.dae</uri>
+            <scale>0.3 0.3 0.3</scale>
+          </mesh>
+        </geometry>
+      </visual>
+      </link>
+
+    <link name="leaf_2">
+      <pose frame="">-0.01555 0.00243 0.04863 0 -0 0</pose>
+       <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://plant_1/meshes/leaf.dae</uri>
+            <scale>0.3 0.3 0.3</scale>
+          </mesh>
+        </geometry>
+      </visual>
+      </link>
+
+    <link name="leaf_3">
+      <pose frame="">0.02033 0.01667 0.03241 -0.19153 -0.080056 2.3042</pose>
+       <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://plant_1/meshes/leaf.dae</uri>
+            <scale>0.3 0.3 0.3</scale>
+          </mesh>
+        </geometry>
+      </visual>
+      </link>
+
+    <link name="leaf_4">
+      <pose frame="">-0.00805 0.00813 0.04155 0 0 -1.18831</pose>
+       <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://plant_1/meshes/leaf.dae</uri>
+            <scale>0.3 0.3 0.3</scale>
+          </mesh>
+        </geometry>
+      </visual>
+      </link>
+
+    <link name="leaf_5">
+      <pose frame="">0.01330 -0.00752 0.04813 0 -0 2.79048</pose>
+       <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://plant_1/meshes/leaf.dae</uri>
+            <scale>0.3 0.3 0.3</scale>
+          </mesh>
+        </geometry>
+      </visual>
+      </link>
+
+    <link name="leaf_6">
+      <pose frame="">-0.00475 -0.01014 0.04643 0 -0 1.37558</pose>
+       <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://plant_1/meshes/leaf.dae</uri>
+            <scale>0.3 0.3 0.3</scale>
+          </mesh>
+        </geometry>
+      </visual>
+      </link>
+
+  </model>
+</sdf>

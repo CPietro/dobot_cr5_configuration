@@ -1,0 +1,33 @@
+# ========================
+# ROS2/CMake temp
+# ========================
+/build/
+/install/
+/log/
+/src/build/
+/src/install/
+/src/log/
+
+# ========================
+# LaTeX temp
+# ========================
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lol
+*.out
+*.synctex.gz
+*.toc
+# Se decidi di ignorare anche il PDF finale della tesi generato in automatico:
+# .pdf
+
+# ========================
+# Misc
+# ========================
+*.gv
+/tesi_unimi_dobot_cr5.pdf
+**/docs/internal
