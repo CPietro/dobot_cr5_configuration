@@ -2,7 +2,7 @@
 #include <rclcpp/qos.hpp>
 
 #include <custom_messages/msg/optimal_point.hpp>
-#include <custom_messages/msg/point.hpp>
+#include <geometry_msgs/msg/point.hpp>
 #include <custom_messages/msg/bounding_box.hpp>
 #include <custom_messages/msg/object.hpp>
 #include <custom_messages/msg/map.hpp>
@@ -26,7 +26,7 @@ double tolerance = 0.05; // how much to tolerate exceeding the field of view
 void generateOptimalCircumferences(custom_messages::msg::Object& plant, double radius);
 void checkWorkspace(custom_messages::msg::Object& plant, const custom_messages::msg::Map& map);
 void pointsInsideOtherObjects(custom_messages::msg::Object& plant, const custom_messages::msg::Map& map);
-std::vector<custom_messages::msg::Point> calculateCenters(custom_messages::msg::Object& plant);
+std::vector<geometry_msgs::msg::Point> calculateCenters(custom_messages::msg::Object& plant);
 void modifyMap(custom_messages::msg::Map& map);
 
 class MapProcessorNode : public rclcpp::Node
@@ -83,8 +83,9 @@ private:
 
         for (auto& circumference : optimal_points.possible_trajectories){
             for (const auto& point : circumference.circumference) {
-                // int grid_x = static_cast<int>(round(center_grid + (point.x) * scale));
-                // int grid_y = static_cast<int>(round(center_grid + (point.y) * scale));
+                (void)point; // Silence unused variable warning
+                // int grid_x = static_cast<int>(round(center_grid + (point.point.x) * scale));
+                // int grid_y = static_cast<int>(round(center_grid + (point.point.y) * scale));
 
                 // if (grid_x >= 0 && grid_x < grid_size && grid_y >= 0 && grid_y < grid_size) {
                 //     if (point.optimality == 1.0) {
@@ -93,7 +94,7 @@ private:
                 //         grid[grid_y][grid_x] = '0';
                 //     }
                 // }
-                // std::cout << "x: " << point.x << ", y: " << point.y << ", z: " << point.z << ", optimality: " << point.optimality << std::endl;
+                // std::cout << "x: " << point.point.x << ", y: " << point.point.y << ", z: " << point.point.z << ", optimality: " << point.optimality << std::endl;
             }
 
             // std::cout << "2D Visualization (1 = Reachable, 0 = Not Reachable):\n";
@@ -110,7 +111,7 @@ private:
 
 void generateOptimalCircumferences(custom_messages::msg::Object& plant, double radius) {
     // num_static_optimalities is not relevant for binary optimality (0 or 1)
-    std::vector<custom_messages::msg::Point> plant_centers = calculateCenters(plant);
+    std::vector<geometry_msgs::msg::Point> plant_centers = calculateCenters(plant);
     double angle_increment = 2.0 * M_PI / num_points;
 
     // std::cout << plant_centers.size() << std::endl;
@@ -123,9 +124,9 @@ void generateOptimalCircumferences(custom_messages::msg::Object& plant, double r
 
         for (int j = 0; j < num_points; ++j) {
             double angle = j * angle_increment;
-            trajectory.circumference[j].x = target_center.x + radius * cos(angle);
-            trajectory.circumference[j].y = target_center.y + radius * sin(angle);
-            trajectory.circumference[j].z = target_center.z;
+            trajectory.circumference[j].point.x = target_center.x + radius * cos(angle);
+            trajectory.circumference[j].point.y = target_center.y + radius * sin(angle);
+            trajectory.circumference[j].point.z = target_center.z;
             trajectory.circumference[j].optimality = 1.0; // Initially set all points as optimal (1)
         }
         plant.possible_trajectories.push_back(trajectory);
@@ -134,16 +135,16 @@ void generateOptimalCircumferences(custom_messages::msg::Object& plant, double r
 
 void checkWorkspace(custom_messages::msg::Object& plant, const custom_messages::msg::Map& map) {  // check if points are reachable
     custom_messages::msg::BoundingBox ws_limits = map.work_space;
-    custom_messages::msg::Point low = ws_limits.low_left;
-    custom_messages::msg::Point top = ws_limits.top_right;
+    geometry_msgs::msg::Point low = ws_limits.low_left;
+    geometry_msgs::msg::Point top = ws_limits.top_right;
 
     for (auto& trajectory : plant.possible_trajectories){
         for (auto& point : trajectory.circumference) {
             // If a point is already marked as non-optimal, don't change it back to optimal
             if (point.optimality != 0.0) {
-                if (point.x < low.x || point.x > top.x ||
-                    point.y < low.y || point.y > top.y ||
-                    point.z < low.z || point.z > top.z) {
+                if (point.point.x < low.x || point.point.x > top.x ||
+                    point.point.y < low.y || point.point.y > top.y ||
+                    point.point.z < low.z || point.point.z > top.z) {
                     point.optimality = 0.0; // Mark as non-optimal
                 }
             }
@@ -167,11 +168,11 @@ void pointsInsideOtherObjects(custom_messages::msg::Object& plant, const custom_
                 for (auto& point : trajectory.circumference) {
                     // If a point is already marked as non-optimal, don't change it back to optimal
                     if (point.optimality != 0.0) {
-                        custom_messages::msg::Point low = object.shape.low_left;
-                        custom_messages::msg::Point top = object.shape.top_right;
-                        if (point.x >= low.x && point.x <= top.x &&
-                            point.y >= low.y && point.y <= top.y &&
-                            point.z >= low.z && point.z <= top.z) {
+                        geometry_msgs::msg::Point low = object.shape.low_left;
+                        geometry_msgs::msg::Point top = object.shape.top_right;
+                        if (point.point.x >= low.x && point.point.x <= top.x &&
+                            point.point.y >= low.y && point.point.y <= top.y &&
+                            point.point.z >= low.z && point.point.z <= top.z) {
                             point.optimality = 0.0; // Mark as non-optimal
                         }
                     }
@@ -181,17 +182,17 @@ void pointsInsideOtherObjects(custom_messages::msg::Object& plant, const custom_
     }
 }
 
-std::vector<custom_messages::msg::Point> calculateCenters(custom_messages::msg::Object& plant) {
-    custom_messages::msg::Point low_left = plant.shape.low_left;
-    custom_messages::msg::Point top_right = plant.shape.top_right;
+std::vector<geometry_msgs::msg::Point> calculateCenters(custom_messages::msg::Object& plant) {
+    geometry_msgs::msg::Point low_left = plant.shape.low_left;
+    geometry_msgs::msg::Point top_right = plant.shape.top_right;
     // std::cout << "xx :" << low_left.x << " yy:" << low_left.y << " zz:" << top_right.x << std::endl;
 
     double height = top_right.z - low_left.z;
-    std::vector<custom_messages::msg::Point> centers;
+    std::vector<geometry_msgs::msg::Point> centers;
 
     if (height <= field_of_vision_z + tolerance) {
         // Only one center
-        custom_messages::msg::Point center;
+        geometry_msgs::msg::Point center;
         center.x = top_right.x - (top_right.x - low_left.x) / 2.0;
         center.y = top_right.y - (top_right.y - low_left.y) / 2.0;
         center.z = top_right.z + (0.2) * field_of_vision_z;
@@ -204,7 +205,7 @@ std::vector<custom_messages::msg::Point> calculateCenters(custom_messages::msg::
         }
 
         for (int i = 0; i < num_divisions; i++) {
-            custom_messages::msg::Point center;
+            geometry_msgs::msg::Point center;
             center.x = top_right.x - (top_right.x - low_left.x) / 2.0;
             center.y = top_right.y - (top_right.y - low_left.y) / 2.0;
 
@@ -227,8 +228,8 @@ void modifyMap(custom_messages::msg::Map& map){
             //std::cout << 1 << std::endl;
 
             // Calculate base diagonal and add it to radius
-            custom_messages::msg::Point low_left = object.shape.low_left;
-            custom_messages::msg::Point top_right = object.shape.top_right;
+            geometry_msgs::msg::Point low_left = object.shape.low_left;
+            geometry_msgs::msg::Point top_right = object.shape.top_right;
             double width = top_right.x - low_left.x;
             double depth = top_right.y - low_left.y;
             double base_diagonal = sqrt(width * width + depth * depth);

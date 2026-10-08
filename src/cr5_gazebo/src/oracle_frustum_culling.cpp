@@ -3,7 +3,7 @@
 #include <gazebo_msgs/msg/model_states.hpp>
 #include <custom_messages/msg/map.hpp>
 #include <custom_messages/msg/object.hpp>
-#include <custom_messages/msg/point.hpp>
+#include <geometry_msgs/msg/point.hpp>
 #include <custom_messages/msg/bounding_box.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
@@ -166,8 +166,8 @@ private:
 
       if (!is_target && !is_obstacle) continue;
 
-      custom_messages::msg::Point low_left;
-      custom_messages::msg::Point top_right;
+      geometry_msgs::msg::Point low_left;
+      geometry_msgs::msg::Point top_right;
       geometry_msgs::msg::Point global_pos = msg->pose[i].position;
 
       // Use real absolute Bounding Boxes from Gazebo plugin if available

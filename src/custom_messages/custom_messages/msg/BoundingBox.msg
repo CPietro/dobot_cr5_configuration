@@ -1,2 +1,2 @@
-Point low_left
-Point top_right
+geometry_msgs/Point low_left
+geometry_msgs/Point top_right
