@@ -41,10 +41,10 @@ def generate_launch_description():
         output='screen'
     )
 
-    reworked_map_node = Node(
-        package='cr5_moveit_cpp_demo',
-        executable='reworked_map_node',
-        name='reworked_map_node',
+    bbox_image_overlay_node = Node(
+        package='cr5_gazebo',
+        executable='bbox_image_overlay_node',
+        name='bbox_image_overlay_node',
         output='screen'
     )
 
@@ -64,6 +64,6 @@ def generate_launch_description():
         # After 4 seconds from homing cmd
         TimerAction(
             period=16.0,
-            actions=[oracle_node, reworked_map_node]
+            actions=[oracle_node, bbox_image_overlay_node]
         )
     ])
