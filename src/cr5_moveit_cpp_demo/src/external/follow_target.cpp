@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include <custom_messages/msg/optimal_point.hpp>
-#include <custom_messages/msg/point.hpp>
+#include <geometry_msgs/msg/point.hpp>
 #include <custom_messages/msg/bounding_box.hpp>
 #include <custom_messages/msg/object.hpp>
 #include <custom_messages/msg/map.hpp>
@@ -20,7 +20,7 @@ using namespace std::chrono_literals;
 // Rimuoviamo le variabili globali che non sono più necessarie per questo scopo
 // custom_messages::msg::Map map;
 // custom_messages::msg::BoundingBox shape;
-// custom_messages::msg::Point center; // Questa non ci serve più per il calcolo del centro
+// geometry_msgs::msg::Point center; // Questa non ci serve più per il calcolo del centro
 
 // La funzione calculate_center non sarà più chiamata per questo scopo
 // void calculate_center(custom_messages::msg::BoundingBox& shape);
@@ -174,8 +174,8 @@ private:
 
 // La funzione calculate_center non è più necessaria, può essere rimossa o ignorata.
 // void calculate_center(custom_messages::msg::BoundingBox& shape){
-//     custom_messages::msg::Point p1 = shape.low_left;
-//     custom_messages::msg::Point p2 = shape.top_right;
+//     geometry_msgs::msg::Point p1 = shape.low_left;
+//     geometry_msgs::msg::Point p2 = shape.top_right;
 //     center.x = p1.x + (p2.x - p1.x) / 2.0;
 //     center.y = p1.y + (p2.y - p1.y) / 2.0;
 //     center.z = p1.z + (p2.z - p1.z) / 2.0;

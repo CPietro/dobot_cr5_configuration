@@ -567,7 +567,7 @@ void processTargetPlants(moveit::planning_interface::MoveGroupInterface& move_gr
                 }
                 else
                 {
-                    target_to_watch.z = object.possible_trajectories[traj_idx].circumference[0].z; // Use z of first point for setting height
+                    target_to_watch.z = object.possible_trajectories[traj_idx].circumference[0].point.z; // Use z of first point for setting height
                     RCLCPP_INFO(logger_, "[PLANT-%d] Used center (subsequent scans): (%.3f, %.3f, %.3f)", plant_number,
                                target_to_watch.x, target_to_watch.y, target_to_watch.z);
                 }
@@ -653,7 +653,7 @@ void processCircumference(geometry_msgs::msg::Point& target_to_watch,
                 !scan_points[i].covered)
             {
                 RCLCPP_INFO(logger_, "[PHASE-1] > Attempting boundary point #%zu: (%.3f, %.3f, %.3f)", 
-                           i, scan_points[i].point.x, scan_points[i].point.y, scan_points[i].point.z);
+                           i, scan_points[i].point.point.x, scan_points[i].point.point.y, scan_points[i].point.point.z);
                 
                 if (attemptToReachPoint(scan_points[i], scan_points, target_to_watch, move_group))
                 {
@@ -698,9 +698,9 @@ void identifyBoundaryPoints(std::vector<ScanPoint>& scan_points)
 double calculateDistance(const custom_messages::msg::OptimalPoint& p1, 
                        const custom_messages::msg::OptimalPoint& p2)
 {
-    double dx = p1.x - p2.x;
-    double dy = p1.y - p2.y;
-    double dz = p1.z - p2.z;
+    double dx = p1.point.x - p2.point.x;
+    double dy = p1.point.y - p2.point.y;
+    double dz = p1.point.z - p2.point.z;
     return std::sqrt(dx*dx + dy*dy + dz*dz);
 }
 
@@ -769,12 +769,12 @@ geometry_msgs::msg::Pose createPosePointingToCenter(
     const geometry_msgs::msg::Point& center)
 {
     geometry_msgs::msg::Pose pose;
-    pose.position.x = point.x;
-    pose.position.y = point.y;
-    pose.position.z = point.z;
+    pose.position.x = point.point.x;
+    pose.position.y = point.point.y;
+    pose.position.z = point.point.z;
     
     // Calculate orientation to point towards center
-    tf2::Vector3 from(point.x, point.y, point.z);
+    tf2::Vector3 from(point.point.x, point.point.y, point.point.z);
     tf2::Vector3 to(center.x, center.y, center.z);
     tf2::Vector3 direction = to - from;
     direction.normalize();
@@ -874,7 +874,7 @@ void scanUncoveredPoints(std::vector<ScanPoint>& scan_points,
         if (!scan_points[idx].covered) // Double check as it might have been covered by previous scan
         {
             RCLCPP_INFO(logger_, "[PHASE-2] > Attempting uncovered point #%zu: (%.3f, %.3f, %.3f)", 
-                       idx, scan_points[idx].point.x, scan_points[idx].point.y, scan_points[idx].point.z);
+                       idx, scan_points[idx].point.point.x, scan_points[idx].point.point.y, scan_points[idx].point.point.z);
 
             if (attemptToReachPoint(scan_points[idx], scan_points, target_to_watch, move_group))
             {
@@ -924,7 +924,7 @@ void scanUncoveredPoints(std::vector<ScanPoint>& scan_points,
             if (sp.point.optimality == 1.0 && !sp.covered)
             {
                 RCLCPP_WARN(logger_, "[UNCOVERED]   - Point #%d: (%.3f, %.3f, %.3f)", 
-                           sp.index, sp.point.x, sp.point.y, sp.point.z);
+                           sp.index, sp.point.point.x, sp.point.point.y, sp.point.point.z);
             }
         }
     }

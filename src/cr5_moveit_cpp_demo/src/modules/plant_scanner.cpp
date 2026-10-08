@@ -196,12 +196,12 @@ geometry_msgs::msg::Pose PlantScanner::createPosePointingToCenter(
     const custom_messages::msg::OptimalPoint& point,
     const geometry_msgs::msg::Point& center) {
     geometry_msgs::msg::Pose pose;
-    pose.position.x = point.x;
-    pose.position.y = point.y;
-    pose.position.z = point.z;
+    pose.position.x = point.point.x;
+    pose.position.y = point.point.y;
+    pose.position.z = point.point.z;
     
     // Calculate orientation to point towards center
-    tf2::Vector3 from(point.x, point.y, point.z);
+    tf2::Vector3 from(point.point.x, point.point.y, point.point.z);
     tf2::Vector3 to(center.x, center.y, center.z);
     tf2::Vector3 direction = to - from;
     direction.normalize();
@@ -246,9 +246,9 @@ geometry_msgs::msg::Pose PlantScanner::createPosePointingToCenter(
 //useless for now but who knows. it might be useful in the future
 double PlantScanner::calculateDistance(const custom_messages::msg::OptimalPoint& p1, 
                                      const custom_messages::msg::OptimalPoint& p2) {
-    double dx = p1.x - p2.x;
-    double dy = p1.y - p2.y;
-    double dz = p1.z - p2.z;
+    double dx = p1.point.x - p2.point.x;
+    double dy = p1.point.y - p2.point.y;
+    double dz = p1.point.z - p2.point.z;
     return std::sqrt(dx*dx + dy*dy + dz*dz);
 }
 

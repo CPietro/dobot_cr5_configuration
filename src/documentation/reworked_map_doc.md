@@ -109,7 +109,7 @@ The `mapCallback` function orchestrates the entire map processing pipeline:
 
 ```cpp
 void generateOptimalCircumferences(custom_messages::msg::Object& plant) {
-    std::vector<custom_messages::msg::Point> plant_centers = calculateCenters(plant);
+    std::vector<geometry_msgs::msg::Point> plant_centers = calculateCenters(plant);
     double angle_increment = 2.0 * M_PI / num_points;
     
     for (auto target_center : plant_centers) {
@@ -119,9 +119,9 @@ void generateOptimalCircumferences(custom_messages::msg::Object& plant) {
         
         for (int j = 0; j < num_points; ++j) {
             double angle = j * angle_increment;
-            trajectory.circumference[j].x = target_center.x + radius * cos(angle);
-            trajectory.circumference[j].y = target_center.y + radius * sin(angle);
-            trajectory.circumference[j].z = target_center.z;
+            trajectory.circumference[j].point.x = target_center.x + radius * cos(angle);
+            trajectory.circumference[j].point.y = target_center.y + radius * sin(angle);
+            trajectory.circumference[j].point.z = target_center.z;
             trajectory.circumference[j].optimality = 1.0;
         }
         plant.possible_trajectories.push_back(trajectory);
@@ -146,16 +146,16 @@ For tall objects, multiple circumferences are generated at different heights, en
 ### calculateCenters Function
 
 ```cpp
-std::vector<custom_messages::msg::Point> calculateCenters(custom_messages::msg::Object& plant) {
-    custom_messages::msg::Point low_left = plant.shape.low_left;
-    custom_messages::msg::Point top_right = plant.shape.top_right;
+std::vector<geometry_msgs::msg::Point> calculateCenters(custom_messages::msg::Object& plant) {
+    geometry_msgs::msg::Point low_left = plant.shape.low_left;
+    geometry_msgs::msg::Point top_right = plant.shape.top_right;
     
     double height = top_right.z - low_left.z;
-    std::vector<custom_messages::msg::Point> centers;
+    std::vector<geometry_msgs::msg::Point> centers;
     
     if (height <= field_of_vision_z + tolerance) {
         // Single center for small objects
-        custom_messages::msg::Point center;
+        geometry_msgs::msg::Point center;
         center.x = top_right.x - (top_right.x - low_left.x) / 2.0;
         center.y = top_right.y - (top_right.y - low_left.y) / 2.0;
         center.z = top_right.z + (0.2) * field_of_vision_z;
@@ -168,7 +168,7 @@ std::vector<custom_messages::msg::Point> calculateCenters(custom_messages::msg::
         }
         
         for (int i = 0; i < num_divisions; i++) {
-            custom_messages::msg::Point center;
+            geometry_msgs::msg::Point center;
             center.x = top_right.x - (top_right.x - low_left.x) / 2.0;
             center.y = top_right.y - (top_right.y - low_left.y) / 2.0;
             
@@ -213,15 +213,15 @@ z_{top} - (i + 0.5) \cdot f_{vision} & \text{if } i > 0
 ```cpp
 void checkWorkspace(custom_messages::msg::Object& plant, const custom_messages::msg::Map& map) {
     custom_messages::msg::BoundingBox ws_limits = map.work_space;
-    custom_messages::msg::Point low = ws_limits.low_left;
-    custom_messages::msg::Point top = ws_limits.top_right;
+    geometry_msgs::msg::Point low = ws_limits.low_left;
+    geometry_msgs::msg::Point top = ws_limits.top_right;
     
     for (auto& trajectory : plant.possible_trajectories) {
         for (auto& point : trajectory.circumference) {
             if (point.optimality != 0.0) {
-                if (point.x < low.x || point.x > top.x ||
-                    point.y < low.y || point.y > top.y ||
-                    point.z < low.z || point.z > top.z) {
+                if (point.point.x < low.x || point.point.x > top.x ||
+                    point.point.y < low.y || point.point.y > top.y ||
+                    point.point.z < low.z || point.point.z > top.z) {
                     point.optimality = 0.0; // Mark as non-optimal
                 }
             }
@@ -248,11 +248,11 @@ void pointsInsideOtherObjects(custom_messages::msg::Object& plant, const custom_
         for (auto& trajectory : plant.possible_trajectories) {
             for (auto& point : trajectory.circumference) {
                 if (point.optimality != 0.0) {
-                    custom_messages::msg::Point low = object.shape.low_left;
-                    custom_messages::msg::Point top = object.shape.top_right;
-                    if (point.x >= low.x && point.x <= top.x &&
-                        point.y >= low.y && point.y <= top.y &&
-                        point.z >= low.z && point.z <= top.z) {
+                    geometry_msgs::msg::Point low = object.shape.low_left;
+                    geometry_msgs::msg::Point top = object.shape.top_right;
+                    if (point.point.x >= low.x && point.point.x <= top.x &&
+                        point.point.y >= low.y && point.point.y <= top.y &&
+                        point.point.z >= low.z && point.point.z <= top.z) {
                         point.optimality = 0.0; // Mark as non-optimal
                     }
                 }
@@ -342,8 +342,8 @@ int center_grid = grid_size / 2;
 
 for (auto& circumference : optimal_points.possible_trajectories) {
     for (const auto& point : circumference.circumference) {
-        int grid_x = static_cast<int>(round(center_grid + (point.x) * scale));
-        int grid_y = static_cast<int>(round(center_grid + (point.y) * scale));
+        int grid_x = static_cast<int>(round(center_grid + (point.point.x) * scale));
+        int grid_y = static_cast<int>(round(center_grid + (point.point.y) * scale));
         
         if (grid_x >= 0 && grid_x < grid_size && grid_y >= 0 && grid_y < grid_size) {
             if (point.optimality == 1.0) {

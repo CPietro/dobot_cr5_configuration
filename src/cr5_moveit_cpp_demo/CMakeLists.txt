@@ -27,6 +27,7 @@ find_package(ament_cmake_python REQUIRED) # Necessario per il supporto di Python
 
 find_package(ament_cmake REQUIRED)
 find_package(custom_messages REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(rosidl_default_runtime REQUIRED)
 find_package(rosidl_generator_cpp REQUIRED)
 

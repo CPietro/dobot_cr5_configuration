@@ -4,7 +4,7 @@
 #include <moveit/planning_scene_interface/planning_scene_interface.h>  
 #include <custom_messages/msg/map.hpp>
 #include <custom_messages/msg/object.hpp>
-#include <custom_messages/msg/point.hpp>
+#include <geometry_msgs/msg/point.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Vector3.h>
@@ -28,7 +28,7 @@ public:
         auto localized_qos = rclcpp::QoS(1).reliable();
 
         // Subscribers
-        plant_center_sub_ = this->create_subscription<custom_messages::msg::Point>(
+        plant_center_sub_ = this->create_subscription<geometry_msgs::msg::Point>(
             "plant_center", best_effort_qos,
             std::bind(&ReconnaissanceNode::plant_center_callback, this, std::placeholders::_1)
         );
@@ -44,11 +44,11 @@ public:
     }
 
 private:
-    void plant_center_callback(const custom_messages::msg::Point::SharedPtr msg)
+    void plant_center_callback(const geometry_msgs::msg::Point::SharedPtr msg)
     {
         RCLCPP_INFO(this->get_logger(), "Received plant center: x=%f, y=%f, z=%f", msg->x, msg->y, msg->z);
 
-        static custom_messages::msg::Point previous_point;
+        static geometry_msgs::msg::Point previous_point;
         static bool is_first_call = true;
 
         double distance = std::sqrt(std::pow(msg->x - previous_point.x, 2) +
@@ -127,7 +127,7 @@ private:
         RCLCPP_INFO(this->get_logger(), "Plant object added to map. Total objects in map: %zu", map.objects.size());
     }
 
-    rclcpp::Subscription<custom_messages::msg::Point>::SharedPtr plant_center_sub_;
+    rclcpp::Subscription<geometry_msgs::msg::Point>::SharedPtr plant_center_sub_;
     rclcpp::Subscription<custom_messages::msg::Object>::SharedPtr final_plant_pos_sub_;
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr localized_plant_pub_;

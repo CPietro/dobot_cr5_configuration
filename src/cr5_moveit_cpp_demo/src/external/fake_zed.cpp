@@ -2,7 +2,7 @@
 #include "rclcpp/qos.hpp"
 
 #include <custom_messages/msg/optimal_point.hpp>
-#include <custom_messages/msg/point.hpp>
+#include <geometry_msgs/msg/point.hpp>
 #include <custom_messages/msg/bounding_box.hpp>
 #include <custom_messages/msg/object.hpp>
 #include <custom_messages/msg/map.hpp>
@@ -33,8 +33,8 @@ public:
 };
 
 void create_map(){
-    custom_messages::msg::Point ws_low_left;
-    custom_messages::msg::Point ws_top_right;
+    geometry_msgs::msg::Point ws_low_left;
+    geometry_msgs::msg::Point ws_top_right;
 
     ws_low_left.x = -1;  // Quadrato 180cm x 180cm centrato sul robot
     ws_low_left.y = -1;
@@ -52,8 +52,8 @@ void create_map(){
     map.work_space = ws;
 
     custom_messages::msg::Object plant1;
-    custom_messages::msg::Point p1_low_left;
-    custom_messages::msg::Point p1_top_right;
+    geometry_msgs::msg::Point p1_low_left;
+    geometry_msgs::msg::Point p1_top_right;
 
     // Prima pianta: davanti al robot, spostata a sinistra di 15cm
     // Centro rettangolo frontale Y = 0.45, pianta centrata a X = -0.15
@@ -79,8 +79,8 @@ void create_map(){
 
 
     custom_messages::msg::Object plant2;
-    custom_messages::msg::Point p2_low_left;
-    custom_messages::msg::Point p2_top_right;
+    geometry_msgs::msg::Point p2_low_left;
+    geometry_msgs::msg::Point p2_top_right;
 
     // Seconda pianta: davanti al robot, spostata a destra di 15cm
     // Centro rettangolo frontale Y = 0.45, pianta centrata a X = +0.15
@@ -104,8 +104,8 @@ void create_map(){
 
 
     custom_messages::msg::Object obstacle1;
-    custom_messages::msg::Point o1_low_left;
-    custom_messages::msg::Point o1_top_right;
+    geometry_msgs::msg::Point o1_low_left;
+    geometry_msgs::msg::Point o1_top_right;
 
     o1_low_left.x = -0.5;
     o1_low_left.y = -0.5;

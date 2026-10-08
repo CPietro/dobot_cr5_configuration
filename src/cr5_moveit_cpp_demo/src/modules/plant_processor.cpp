@@ -130,7 +130,7 @@ geometry_msgs::msg::Point PlantProcessor::calculateScanCenter(const custom_messa
     } else {
         // Use z of first point for setting height
         if (!object.possible_trajectories.empty() && !object.possible_trajectories[0].circumference.empty()) {
-            target_to_watch.z = object.possible_trajectories[0].circumference[0].z;
+            target_to_watch.z = object.possible_trajectories[0].circumference[0].point.z;
         } else {
             target_to_watch.z = (object.shape.low_left.z + object.shape.top_right.z) / 2.0;
         }
