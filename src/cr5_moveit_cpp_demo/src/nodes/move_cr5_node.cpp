@@ -801,13 +801,6 @@ geometry_msgs::msg::Pose createPosePointingToCenter(
     tf2::Quaternion q;
     rotation.getRotation(q);
     
-    // Add 180° rotation around end effector Z-axis
-    tf2::Quaternion z_rotation;
-    z_rotation.setRPY(0, 0, M_PI); // 180 degrees in radians around Z
-    
-    // Combine rotations: first pointing to center, then 180° around Z
-    q = q * z_rotation;
-    
     pose.orientation.x = q.x();
     pose.orientation.y = q.y();
     pose.orientation.z = q.z();
