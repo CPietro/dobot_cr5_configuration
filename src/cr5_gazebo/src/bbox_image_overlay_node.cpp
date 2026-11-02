@@ -123,28 +123,72 @@ private:
       corners_world[6].x = min_x; corners_world[6].y = max_y; corners_world[6].z = max_z;
       corners_world[7].x = max_x; corners_world[7].y = max_y; corners_world[7].z = max_z;
 
-      // 2. Transform to Camera Frame and Project to 2D
-      std::vector<cv::Point> pts_2d;
-      bool all_behind_camera = true;
-
-      for (const auto& pt_w : corners_world) {
+      // 2. Transform 8 corners to Camera Frame
+      std::vector<geometry_msgs::msg::Point> corners_cam(8);
+      for (size_t i = 0; i < 8; ++i) {
         geometry_msgs::msg::PointStamped pt_global;
         pt_global.header.frame_id = "world";
-        pt_global.point = pt_w;
+        pt_global.point = corners_world[i];
 
         geometry_msgs::msg::PointStamped pt_cam;
         tf2::doTransform(pt_global, pt_cam, t);
+        corners_cam[i] = pt_cam.point;
+      }
 
-        // If point is behind camera, we shouldn't strictly project it normally
-        if (pt_cam.point.z > 0.0) {
-          all_behind_camera = false;
-          int u = static_cast<int>((pt_cam.point.x / pt_cam.point.z) * fx + cx);
-          int v = static_cast<int>((pt_cam.point.y / pt_cam.point.z) * fy + cy);
-          pts_2d.push_back(cv::Point(u, v));
+      // Define 12 edges of the cuboid connecting the 8 corners
+      const int edges[12][2] = {
+        {0, 1}, {1, 3}, {3, 2}, {2, 0}, // Bottom face
+        {4, 5}, {5, 7}, {7, 6}, {6, 4}, // Top face
+        {0, 4}, {1, 5}, {2, 6}, {3, 7}  // Vertical pillars
+      };
+
+      const double z_near = 0.10; // ZED camera near clipping distance in meters
+      std::vector<cv::Point> pts_2d;
+
+      for (int e = 0; e < 12; ++e) {
+        const auto& p1 = corners_cam[edges[e][0]];
+        const auto& p2 = corners_cam[edges[e][1]];
+
+        bool p1_in = (p1.z >= z_near);
+        bool p2_in = (p2.z >= z_near);
+
+        if (!p1_in && !p2_in) {
+          // Entire edge is behind or too close to camera plane
+          continue;
+        }
+
+        if (p1_in && p2_in) {
+          // Both vertices are in front of near plane
+          pts_2d.push_back(cv::Point(
+            static_cast<int>((p1.x / p1.z) * fx + cx),
+            static_cast<int>((p1.y / p1.z) * fy + cy)
+          ));
+          pts_2d.push_back(cv::Point(
+            static_cast<int>((p2.x / p2.z) * fx + cx),
+            static_cast<int>((p2.y / p2.z) * fy + cy)
+          ));
+        } else {
+          // Edge intersects near plane: interpolate point at z = z_near
+          double t_param = (z_near - p1.z) / (p2.z - p1.z);
+          double clip_x = p1.x + t_param * (p2.x - p1.x);
+          double clip_y = p1.y + t_param * (p2.y - p1.y);
+
+          // Project intersection point
+          pts_2d.push_back(cv::Point(
+            static_cast<int>((clip_x / z_near) * fx + cx),
+            static_cast<int>((clip_y / z_near) * fy + cy)
+          ));
+
+          // Project the endpoint that is in front of the near plane
+          const auto& p_valid = p1_in ? p1 : p2;
+          pts_2d.push_back(cv::Point(
+            static_cast<int>((p_valid.x / p_valid.z) * fx + cx),
+            static_cast<int>((p_valid.y / p_valid.z) * fy + cy)
+          ));
         }
       }
 
-      if (all_behind_camera || pts_2d.empty()) continue;
+      if (pts_2d.empty()) continue;
 
       // 3. Find 2D Bounding Box
       int u_min = image_msg->width;
