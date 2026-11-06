@@ -1,12 +1,14 @@
 import os
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, TimerAction, ExecuteProcess, DeclareLaunchArgument
+from launch.actions import IncludeLaunchDescription, TimerAction, ExecuteProcess, DeclareLaunchArgument, SetEnvironmentVariable
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
+    dobot_type_env = SetEnvironmentVariable(name='DOBOT_TYPE', value=os.environ.get('DOBOT_TYPE', 'cr5'))
+
     pkg_gazebo = FindPackageShare('cr5_gazebo')
     pkg_moveit = FindPackageShare('dobot_moveit')
     rviz_config_file = os.path.join(pkg_gazebo.find('cr5_gazebo'), 'rviz', 'zed_perception.rviz')
@@ -43,6 +45,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        dobot_type_env,
         world_arg,
         gazebo_launch,
 
