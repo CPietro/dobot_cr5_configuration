@@ -1,3 +1,4 @@
+#include <cmath>
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
 #include <gazebo_ros/node.hpp>
@@ -36,10 +37,16 @@ public:
       
       // BoundingBox() returns the AABB in the WORLD coordinate frame!
       ignition::math::AxisAlignedBox world_bbox = model->BoundingBox();
-      
-      // Sanity check: if collision shapes are missing or broken (like uninitialized meshes),
-      // Gazebo returns garbage values (e.g., 2e17). We ignore these.
-      if (std::abs(world_bbox.Min().X()) > 1000.0 || std::abs(world_bbox.Max().X()) > 1000.0) {
+      const auto &bmin = world_bbox.Min();
+      const auto &bmax = world_bbox.Max();
+
+      // Sanity check: if collision shapes are missing, broken, or uninitialized,
+      // Gazebo returns garbage, infinite, NaN, or inverted values (e.g., 2e17). We ignore these.
+      if (!std::isfinite(bmin.X()) || !std::isfinite(bmin.Y()) || !std::isfinite(bmin.Z()) ||
+          !std::isfinite(bmax.X()) || !std::isfinite(bmax.Y()) || !std::isfinite(bmax.Z()) ||
+          std::abs(bmin.X()) > 1000.0 || std::abs(bmin.Y()) > 1000.0 || std::abs(bmin.Z()) > 1000.0 ||
+          std::abs(bmax.X()) > 1000.0 || std::abs(bmax.Y()) > 1000.0 || std::abs(bmax.Z()) > 1000.0 ||
+          bmin.X() > bmax.X() || bmin.Y() > bmax.Y() || bmin.Z() > bmax.Z()) {
         continue;
       }
       
@@ -51,13 +58,13 @@ public:
       marker.type = visualization_msgs::msg::Marker::POINTS;
       
       geometry_msgs::msg::Point p_min, p_max;
-      p_min.x = world_bbox.Min().X();
-      p_min.y = world_bbox.Min().Y();
-      p_min.z = world_bbox.Min().Z();
+      p_min.x = bmin.X();
+      p_min.y = bmin.Y();
+      p_min.z = bmin.Z();
       
-      p_max.x = world_bbox.Max().X();
-      p_max.y = world_bbox.Max().Y();
-      p_max.z = world_bbox.Max().Z();
+      p_max.x = bmax.X();
+      p_max.y = bmax.Y();
+      p_max.z = bmax.Z();
       
       marker.points.push_back(p_min);
       marker.points.push_back(p_max);
