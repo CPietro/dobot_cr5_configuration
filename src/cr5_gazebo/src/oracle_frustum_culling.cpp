@@ -126,13 +126,14 @@ private:
 
     custom_messages::msg::Map out_map;
 
-    // The workspace limits in absolute world coordinates dynamically shift with the robot
-    out_map.work_space.low_left.x = this->get_parameter("ws_x_min").as_double() + offset_x;
-    out_map.work_space.low_left.y = this->get_parameter("ws_y_min").as_double() + offset_y;
-    out_map.work_space.low_left.z = this->get_parameter("ws_z_min").as_double() + offset_z;
-    out_map.work_space.top_right.x = this->get_parameter("ws_x_max").as_double() + offset_x;
-    out_map.work_space.top_right.y = this->get_parameter("ws_y_max").as_double() + offset_y;
-    out_map.work_space.top_right.z = this->get_parameter("ws_z_max").as_double() + offset_z;
+    // In MoveIt world coordinates, the robot base is at (0, 0, 0) and objects are shifted by -offset.
+    // Workspace limits are already relative to the robot base, so no offset addition is needed.
+    out_map.work_space.low_left.x = this->get_parameter("ws_x_min").as_double();
+    out_map.work_space.low_left.y = this->get_parameter("ws_y_min").as_double();
+    out_map.work_space.low_left.z = this->get_parameter("ws_z_min").as_double();
+    out_map.work_space.top_right.x = this->get_parameter("ws_x_max").as_double();
+    out_map.work_space.top_right.y = this->get_parameter("ws_y_max").as_double();
+    out_map.work_space.top_right.z = this->get_parameter("ws_z_max").as_double();
 
     auto target_kw = this->get_parameter("target_keywords").as_string_array();
     auto obstacle_kw = this->get_parameter("obstacle_keywords").as_string_array();
