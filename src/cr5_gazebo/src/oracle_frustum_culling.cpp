@@ -140,6 +140,8 @@ private:
 
     double fov_h = this->get_parameter("fov_horizontal_deg").as_double() * M_PI / 180.0;
     double fov_v = this->get_parameter("fov_vertical_deg").as_double() * M_PI / 180.0;
+    double tan_half_fov_h = std::tan(fov_h / 2.0);
+    double tan_half_fov_v = std::tan(fov_v / 2.0);
     double min_z = this->get_parameter("min_depth").as_double();
     double max_z = this->get_parameter("max_depth").as_double();
 
@@ -180,11 +182,6 @@ private:
         top_right.x = model_bboxes_[model_name].second.x - offset_x;
         top_right.y = model_bboxes_[model_name].second.y - offset_y;
         top_right.z = model_bboxes_[model_name].second.z - offset_z;
-        
-        // Compute center for frustum calculation
-        global_pos.x = (low_left.x + top_right.x) / 2.0;
-        global_pos.y = (low_left.y + top_right.y) / 2.0;
-        global_pos.z = (low_left.z + top_right.z) / 2.0;
       } else {
         // Fallback to dummy sizes if plugin data is missing
         double dim_x = this->get_parameter("dummy_size_x").as_double();
@@ -205,29 +202,57 @@ private:
         top_right.z = global_pos.z + dim_z;
       }
 
-      geometry_msgs::msg::PointStamped pt_global;
-      pt_global.header.frame_id = global_frame;
-      pt_global.header.stamp = this->get_clock()->now();
-      pt_global.point = global_pos;
+      // Volumetric Frustum Culling: test the 8 corners of the 3D AABB against all 6 frustum planes
+      geometry_msgs::msg::Point corners_world[8];
+      corners_world[0].x = low_left.x;  corners_world[0].y = low_left.y;  corners_world[0].z = low_left.z;
+      corners_world[1].x = top_right.x; corners_world[1].y = low_left.y;  corners_world[1].z = low_left.z;
+      corners_world[2].x = low_left.x;  corners_world[2].y = top_right.y; corners_world[2].z = low_left.z;
+      corners_world[3].x = top_right.x; corners_world[3].y = top_right.y; corners_world[3].z = low_left.z;
+      corners_world[4].x = low_left.x;  corners_world[4].y = low_left.y;  corners_world[4].z = top_right.z;
+      corners_world[5].x = top_right.x; corners_world[5].y = low_left.y;  corners_world[5].z = top_right.z;
+      corners_world[6].x = low_left.x;  corners_world[6].y = top_right.y; corners_world[6].z = top_right.z;
+      corners_world[7].x = top_right.x; corners_world[7].y = top_right.y; corners_world[7].z = top_right.z;
 
-      geometry_msgs::msg::PointStamped pt_camera;
-      try {
-        tf2::doTransform(pt_global, pt_camera, t);
-      } catch (const tf2::TransformException & ex) {
-        continue;
+      bool all_out_near = true;
+      bool all_out_far = true;
+      bool all_out_left = true;
+      bool all_out_right = true;
+      bool all_out_top = true;
+      bool all_out_bottom = true;
+      bool transform_ok = true;
+
+      for (size_t c = 0; c < 8; ++c) {
+        geometry_msgs::msg::PointStamped pt_global;
+        pt_global.header.frame_id = global_frame;
+        pt_global.point = corners_world[c];
+
+        geometry_msgs::msg::PointStamped pt_camera;
+        try {
+          tf2::doTransform(pt_global, pt_camera, t);
+        } catch (const tf2::TransformException & ex) {
+          transform_ok = false;
+          break;
+        }
+
+        double cx = pt_camera.point.x;
+        double cy = pt_camera.point.y;
+        double cz = pt_camera.point.z;
+
+        double max_x_at_z = cz * tan_half_fov_h;
+        double max_y_at_z = cz * tan_half_fov_v;
+
+        if (cz >= min_z) all_out_near = false;
+        if (cz <= max_z) all_out_far = false;
+        if (cx >= -max_x_at_z) all_out_left = false;
+        if (cx <= max_x_at_z) all_out_right = false;
+        if (cy >= -max_y_at_z) all_out_top = false;
+        if (cy <= max_y_at_z) all_out_bottom = false;
       }
 
-      // Frustum Culling check
-      double cx = pt_camera.point.x;
-      double cy = pt_camera.point.y;
-      double cz = pt_camera.point.z;
-
-      if (cz < min_z || cz > max_z) continue;
-
-      double max_x_at_z = cz * std::tan(fov_h / 2.0);
-      double max_y_at_z = cz * std::tan(fov_v / 2.0);
-
-      if (std::abs(cx) > max_x_at_z || std::abs(cy) > max_y_at_z) continue;
+      if (!transform_ok || all_out_near || all_out_far ||
+          all_out_left || all_out_right || all_out_top || all_out_bottom) {
+        continue;
+      }
 
       // Object passed culling, create bounding box in GLOBAL coordinates
       custom_messages::msg::Object obj;
