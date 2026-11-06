@@ -46,9 +46,11 @@ public:
     tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
-    // Subscriber to the Map (/Boing)
+    // Subscriber to the Map (/Boing) with Transient Local QoS
+    rclcpp::QoS map_qos(rclcpp::KeepLast(1));
+    map_qos.transient_local();
     map_sub_ = this->create_subscription<custom_messages::msg::Map>(
-      "/Boing", 10,
+      "/Boing", map_qos,
       std::bind(&BboxImageOverlayNode::mapCallback, this, std::placeholders::_1)
     );
 
