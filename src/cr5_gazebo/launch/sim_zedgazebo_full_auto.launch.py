@@ -47,21 +47,24 @@ def generate_launch_description():
         package='cr5_gazebo',
         executable='oracle_frustum_culling_node',
         name='oracle_frustum_culling',
-        output='screen'
+        output='screen',
+        parameters=[{'use_sim_time': True}]
     )
 
     reworked_map_node = Node(
         package='cr5_moveit_cpp_demo',
         executable='reworked_map_node',
         name='reworked_map_node',
-        output='screen'
+        output='screen',
+        parameters=[{'use_sim_time': True}]
     )
 
     move_cr5_node = Node(
         package='cr5_moveit_cpp_demo',
         executable='move_cr5_node_modular',
         name='move_cr5_node_modular',
-        output='screen'
+        output='screen',
+        parameters=[{'use_sim_time': True}]
     )
 
     return LaunchDescription([

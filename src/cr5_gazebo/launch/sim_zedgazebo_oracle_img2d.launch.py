@@ -46,14 +46,16 @@ def generate_launch_description():
         package='cr5_gazebo',
         executable='oracle_frustum_culling_node',
         name='oracle_frustum_culling',
-        output='screen'
+        output='screen',
+        parameters=[{'use_sim_time': True}]
     )
 
     bbox_image_overlay_node = Node(
         package='cr5_gazebo',
         executable='bbox_image_overlay_node',
         name='bbox_image_overlay_node',
-        output='screen'
+        output='screen',
+        parameters=[{'use_sim_time': True}]
     )
 
     return LaunchDescription([
