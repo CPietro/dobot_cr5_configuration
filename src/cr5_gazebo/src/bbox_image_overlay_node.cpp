@@ -9,7 +9,7 @@
 #include <message_filters/time_synchronizer.h>
 
 #include <cv_bridge/cv_bridge.h>
-#include <opencv2/highgui/highgui.hpp>
+#include <cmath>
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include <tf2_ros/buffer.h>
@@ -267,9 +267,12 @@ private:
       }
     }
 
-    // 2. Sort candidates front-to-back (lowest min_z first)
+    // 2. Sort candidates front-to-back (lowest min_z first, tie-break with center_z)
     std::sort(candidates.begin(), candidates.end(), [](const ProjectedCandidate& a, const ProjectedCandidate& b) {
-      return a.min_z < b.min_z;
+      if (std::abs(a.min_z - b.min_z) > 1e-3) {
+        return a.min_z < b.min_z;
+      }
+      return a.center_z < b.center_z;
     });
 
     // 3. Occlusion culling and rendering
