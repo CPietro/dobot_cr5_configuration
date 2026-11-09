@@ -33,8 +33,8 @@ public:
     this->declare_parameter<std::string>("camera_frame", "zed_optical_link");
     this->declare_parameter<std::string>("robot_model_name", "dobot_cr5");
     
-    this->declare_parameter<double>("fov_horizontal_deg", 86.0);
-    this->declare_parameter<double>("fov_vertical_deg", 70.0);
+    this->declare_parameter<double>("fov_horizontal_deg", 85.94);
+    this->declare_parameter<double>("fov_vertical_deg", 69.39);
     this->declare_parameter<double>("min_depth", 0.1);
     this->declare_parameter<double>("max_depth", 8.0);
     
@@ -156,6 +156,10 @@ private:
     double min_z = this->get_parameter("min_depth").as_double();
     double max_z = this->get_parameter("max_depth").as_double();
 
+    double dim_x = this->get_parameter("dummy_size_x").as_double();
+    double dim_y = this->get_parameter("dummy_size_y").as_double();
+    double dim_z = this->get_parameter("dummy_size_z").as_double();
+
     for (size_t i = 0; i < msg->name.size(); ++i) {
       const std::string& model_name = msg->name[i];
       
@@ -200,10 +204,6 @@ private:
         gz_corners[7] = tf2::Vector3(bmax.x, bmax.y, bmax.z);
       } else {
         // Fallback to dummy sizes if plugin data is missing
-        double dim_x = this->get_parameter("dummy_size_x").as_double();
-        double dim_y = this->get_parameter("dummy_size_y").as_double();
-        double dim_z = this->get_parameter("dummy_size_z").as_double();
-
         double gz_min_x = msg->pose[i].position.x - (dim_x / 2.0);
         double gz_min_y = msg->pose[i].position.y - (dim_y / 2.0);
         double gz_min_z = msg->pose[i].position.z;
