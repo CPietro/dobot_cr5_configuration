@@ -19,7 +19,6 @@ find_package(gazebo_dev REQUIRED)
 find_package(gazebo_ros REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
-find_package(image_transport REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(message_filters REQUIRED)
 find_package(OpenCV REQUIRED)
@@ -27,7 +26,6 @@ find_package(OpenCV REQUIRED)
 install(DIRECTORY
   launch
   models
-  urdf
   worlds
   config
   rviz
@@ -72,7 +70,6 @@ ament_target_dependencies(bbox_image_overlay
   sensor_msgs
   custom_messages
   cv_bridge
-  image_transport
   message_filters
   tf2
   tf2_ros

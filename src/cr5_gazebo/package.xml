@@ -2,21 +2,16 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>cr5_gazebo</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <version>0.1.0</version>
+  <description>Gazebo simulation worlds, models, plugins, and perception nodes for the Dobot CR5 manipulator with ZED camera.</description>
   <maintainer email="55089927+CPietro@users.noreply.github.com">cpietro</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <exec_depend>gazebo_ros</exec_depend>
-  <exec_depend>robot_state_publisher</exec_depend>
-  <exec_depend>xacro</exec_depend>
-  <test_depend>ament_lint_auto</test_depend>
-  <test_depend>ament_lint_common</test_depend>
+  <depend>gazebo_ros</depend>
+  <depend>tf2_ros</depend>
   <depend>sensor_msgs</depend>
-  <exec_depend>tf2_ros</exec_depend>
-
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>gazebo_msgs</depend>
@@ -27,8 +22,21 @@
   <depend>gazebo_dev</depend>
   <depend>visualization_msgs</depend>
   <depend>cv_bridge</depend>
-  <depend>image_transport</depend>
   <depend>message_filters</depend>
+
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs_py</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-scipy</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+  <exec_depend>dobot_moveit</exec_depend>
+  <exec_depend>dobot_rviz</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>
