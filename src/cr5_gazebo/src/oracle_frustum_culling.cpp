@@ -91,6 +91,11 @@ private:
       return;
     }
 
+    // Wait until GazeboBBoxPublisher has populated bounding boxes
+    if (model_bboxes_.empty()) {
+      return;
+    }
+
     // Throttle frequency to 10 Hz (handle Gazebo simulation time reset when dt < 0)
     rclcpp::Time current_time = this->now();
     double dt = (current_time - last_publish_time_).seconds();
