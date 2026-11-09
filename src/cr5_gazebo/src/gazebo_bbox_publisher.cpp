@@ -85,6 +85,11 @@ public:
       marker.ns = model->GetName();
       marker.id = id++;
       marker.type = visualization_msgs::msg::Marker::POINTS;
+      marker.action = visualization_msgs::msg::Marker::ADD;
+      marker.scale.x = 0.02;
+      marker.scale.y = 0.02;
+      marker.color.g = 1.0f;
+      marker.color.a = 1.0f;
       
       geometry_msgs::msg::Point p_min, p_max;
       p_min.x = bmin.X();
