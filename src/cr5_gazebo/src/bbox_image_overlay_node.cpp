@@ -65,6 +65,8 @@ public:
       image_sub_, cam_info_sub_, 10);
     sync_->registerCallback(std::bind(&BboxImageOverlayNode::syncCallback, this, std::placeholders::_1, std::placeholders::_2));
 
+    last_image_stamp_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
+
     RCLCPP_INFO(this->get_logger(), "Bbox Image Overlay Node started.");
   }
 
@@ -78,6 +80,13 @@ private:
   void syncCallback(const sensor_msgs::msg::Image::ConstSharedPtr& image_msg,
                     const sensor_msgs::msg::CameraInfo::ConstSharedPtr& cam_info_msg)
   {
+    // Handle Gazebo simulation time reset when image timestamp jumps backwards
+    rclcpp::Time current_stamp(image_msg->header.stamp);
+    if (last_image_stamp_.nanoseconds() > 0 && current_stamp < last_image_stamp_) {
+      tf_buffer_->clear();
+    }
+    last_image_stamp_ = current_stamp;
+
     custom_messages::msg::Map::SharedPtr current_map;
     {
       std::lock_guard<std::mutex> lock(map_mutex_);
@@ -332,6 +341,7 @@ private:
 
   custom_messages::msg::Map::SharedPtr latest_map_;
   std::mutex map_mutex_;
+  rclcpp::Time last_image_stamp_;
 };
 
 }

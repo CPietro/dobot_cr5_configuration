@@ -3,6 +3,7 @@
 #include <gazebo/physics/physics.hh>
 #include <gazebo_ros/node.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 namespace gazebo
@@ -17,16 +18,44 @@ public:
     world_ = _world;
     ros_node_ = gazebo_ros::Node::Get(_sdf);
     pub_ = ros_node_->create_publisher<visualization_msgs::msg::MarkerArray>("/gazebo/model_bboxes", 10);
+    joint_state_pub_ = ros_node_->create_publisher<sensor_msgs::msg::JointState>("/joint_states", 10);
     update_connection_ = event::Events::ConnectWorldUpdateBegin(std::bind(&GazeboBBoxPublisher::OnUpdate, this));
     last_publish_time_ = world_->SimTime();
+    max_sim_time_ = world_->SimTime();
     RCLCPP_INFO(ros_node_->get_logger(), "Gazebo BBox Publisher Plugin loaded (Pure World AABB).");
   }
 
   void OnUpdate()
   {
     common::Time current_time = world_->SimTime();
-    if ((current_time - last_publish_time_).Double() < 0.1) return;
+    double dt = (current_time - last_publish_time_).Double();
+    if (dt >= 0.0 && dt < 0.1) return;
     last_publish_time_ = current_time;
+
+    if (current_time > max_sim_time_) {
+      max_sim_time_ = current_time;
+    } else if (current_time < max_sim_time_) {
+      // Workaround for upstream ROS 2 Humble gazebo_ros2_control bug:
+      // GazeboRosControlPrivate::Update() stops updating controllers (including joint_state_broadcaster)
+      // after a simulation time reset until SimTime catches back up to the pre-reset timestamp.
+      // Publish /joint_states directly from the Gazebo robot model during this recovery window
+      // so robot_state_publisher and RViz2 keep the TF tree (world -> ... -> zed_optical_link) alive.
+      physics::ModelPtr robot_model = world_->ModelByName("dobot_cr5");
+      if (robot_model) {
+        sensor_msgs::msg::JointState js_msg;
+        js_msg.header.stamp = ros_node_->now();
+        for (const auto &joint : robot_model->GetJoints()) {
+          if (joint && joint->DOF() > 0) {
+            js_msg.name.push_back(joint->GetName());
+            js_msg.position.push_back(joint->Position(0));
+            js_msg.velocity.push_back(joint->GetVelocity(0));
+          }
+        }
+        if (!js_msg.name.empty()) {
+          joint_state_pub_->publish(js_msg);
+        }
+      }
+    }
 
     visualization_msgs::msg::MarkerArray msg;
     physics::Model_V models = world_->Models();
@@ -79,8 +108,10 @@ private:
   physics::WorldPtr world_;
   gazebo_ros::Node::SharedPtr ros_node_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_;
+  rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
   event::ConnectionPtr update_connection_;
   common::Time last_publish_time_;
+  common::Time max_sim_time_;
 };
 
 GZ_REGISTER_WORLD_PLUGIN(GazeboBBoxPublisher)

@@ -60,6 +60,7 @@ ament_target_dependencies(gazebo_bbox_publisher
   rclcpp
   gazebo_ros
   visualization_msgs
+  sensor_msgs
 )
 
 add_library(bbox_image_overlay SHARED src/bbox_image_overlay_node.cpp)

@@ -91,9 +91,12 @@ private:
       return;
     }
 
-    // Throttle frequency to 10 Hz 
+    // Throttle frequency to 10 Hz (handle Gazebo simulation time reset when dt < 0)
     rclcpp::Time current_time = this->now();
-    if ((current_time - last_publish_time_).seconds() < 0.1) {
+    double dt = (current_time - last_publish_time_).seconds();
+    if (dt < 0.0) {
+      tf_buffer_->clear();
+    } else if (dt < 0.1) {
       return;
     }
     last_publish_time_ = current_time;
