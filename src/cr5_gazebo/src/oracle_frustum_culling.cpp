@@ -275,6 +275,10 @@ private:
       out_map.objects.push_back(obj);
     }
 
+    if (out_map.objects.empty()) {
+      RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
+        "No objects currently inside camera frustum; publishing empty objects list.");
+    }
     map_pub_->publish(out_map);
   }
 

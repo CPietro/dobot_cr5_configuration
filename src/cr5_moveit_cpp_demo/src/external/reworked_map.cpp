@@ -62,6 +62,10 @@ private:
     {
         RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 5000, "Received map from Boing, starting reprocessing (silenced spam)...");
         map = *msg; // Make a copy of the received map
+        if (map.objects.empty()) {
+            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000, "Received map with no objects in frustum, skipping reprocessing.");
+            return;
+        }
         modifyMap(map);
         map_publisher_->publish(map);
         // const int grid_size = 41;
