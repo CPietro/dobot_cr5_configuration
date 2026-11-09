@@ -1,17 +1,13 @@
-import os
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, TimerAction, ExecuteProcess, DeclareLaunchArgument, SetEnvironmentVariable
+from launch.actions import IncludeLaunchDescription, TimerAction, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
-def generate_launch_description():
-    dobot_type_env = SetEnvironmentVariable(name='DOBOT_TYPE', value=os.environ.get('DOBOT_TYPE', 'cr5'))
 
+def generate_launch_description():
     pkg_gazebo = FindPackageShare('cr5_gazebo')
-    pkg_moveit = FindPackageShare('dobot_moveit')
-    rviz_config_file = os.path.join(pkg_gazebo.find('cr5_gazebo'), 'rviz', 'zed_perception.rviz')
 
     world_arg = DeclareLaunchArgument(
         'world',
@@ -19,32 +15,11 @@ def generate_launch_description():
         description='Gazebo world file name located in cr5_gazebo/worlds (e.g. first.world, first_ac.world)'
     )
 
-    gazebo_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([pkg_gazebo, '/launch/sim_gazebo.launch.py']),
+    full_sim_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([pkg_gazebo, '/launch/sim_zedgazebo_full.launch.py']),
         launch_arguments={'world': LaunchConfiguration('world')}.items()
     )
 
-    moveit_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([pkg_moveit, '/launch/dobot_moveit.launch.py']),
-        launch_arguments={'use_rviz': 'false', 'use_sim_time': 'true'}.items()
-    )
-
-    rviz_node = Node(
-        package='rviz2', executable='rviz2', name='rviz2_gazebo',
-        output='log', arguments=['-d', rviz_config_file],
-        parameters=[{'use_sim_time': True}]
-    )
-
-    homing_cmd = ExecuteProcess(
-        cmd=[
-            'ros2', 'topic', 'pub', '--once', '/cr5_group_controller/joint_trajectory',
-            'trajectory_msgs/msg/JointTrajectory',
-            '"{joint_names: [\'joint1\', \'joint2\', \'joint3\', \'joint4\', \'joint5\', \'joint6\'], points: [{positions: [-1.8326, 0.0, 0.0, 0.7854, -1.5708, 0.0], time_from_start: {sec: 2, nanosec: 0}}]}"'
-        ],
-        shell=True
-    )
-
-    # I tre nuovi nodi
     oracle_node = Node(
         package='cr5_gazebo',
         executable='oracle_frustum_culling_node',
@@ -70,21 +45,10 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        dobot_type_env,
         world_arg,
-        gazebo_launch,
+        full_sim_launch,
 
-        TimerAction(
-            period=8.0,
-            actions=[moveit_launch, rviz_node]
-        ),
-
-        TimerAction(
-            period=12.0,
-            actions=[homing_cmd]
-        ),
-
-        # After 4 seconds from homing cmd
+        # Start perception, planning map reprocessing, and trajectory execution after robot homing
         TimerAction(
             period=16.0,
             actions=[oracle_node, reworked_map_node, move_cr5_node]

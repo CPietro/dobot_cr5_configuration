@@ -1,3 +1,13 @@
+"""Launch Gazebo with cr5_gazebo world and spawn the Dobot CR5 robot.
+
+Note:
+    This launch file starts Gazebo with the model path configured and executes
+    spawn_entity.py to spawn 'dobot_cr5'. The spawn entity node waits for
+    the '/robot_description' topic, which is published by robot_state_publisher
+    in dobot_moveit.launch.py.
+    This launch file is intended to be included by sim_zedgazebo_full.launch.py.
+"""
+
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
