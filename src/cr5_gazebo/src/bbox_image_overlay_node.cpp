@@ -120,15 +120,22 @@ private:
         camera_frame = "zed_optical_link";
     }
 
-    // Get Transform from World to Camera
+    // Get Transform from World to Camera at the image capture timestamp (fallback to latest)
     geometry_msgs::msg::TransformStamped t;
     try {
       // Assuming map coordinates are in "world"
-      t = tf_buffer_->lookupTransform(camera_frame, "world", tf2::TimePointZero);
-    } catch (const tf2::TransformException & ex) {
-      RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
-        "TF Error: %s", ex.what());
-      return;
+      t = tf_buffer_->lookupTransform(
+        camera_frame, "world",
+        rclcpp::Time(image_msg->header.stamp),
+        rclcpp::Duration::from_seconds(0.05));
+    } catch (const tf2::TransformException &) {
+      try {
+        t = tf_buffer_->lookupTransform(camera_frame, "world", tf2::TimePointZero);
+      } catch (const tf2::TransformException & ex) {
+        RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
+          "TF Error: %s", ex.what());
+        return;
+      }
     }
 
     std::vector<ProjectedCandidate> candidates;
