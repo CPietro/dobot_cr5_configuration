@@ -12,6 +12,8 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <geometry_msgs/msg/point_stamped.hpp>
 
+#include <algorithm>
+#include <limits>
 #include <cmath>
 #include <string>
 #include <vector>
@@ -29,6 +31,7 @@ public:
     // Parameters initialization
     this->declare_parameter<std::string>("global_frame", "world");
     this->declare_parameter<std::string>("camera_frame", "zed_optical_link");
+    this->declare_parameter<std::string>("robot_model_name", "dobot_cr5");
     
     this->declare_parameter<double>("fov_horizontal_deg", 86.0);
     this->declare_parameter<double>("fov_vertical_deg", 70.0);
@@ -106,15 +109,15 @@ private:
     }
     last_publish_time_ = current_time;
 
-    // Dynamically find the robot's spawn offset to align Gazebo World with MoveIt World
-    double offset_x = 0.0;
-    double offset_y = 0.0;
-    double offset_z = 0.0;
+    // Find the robot's spawn pose to align Gazebo World with MoveIt World
+    const std::string robot_name = this->get_parameter("robot_model_name").as_string();
+    tf2::Transform robot_tf_inv;
+    robot_tf_inv.setIdentity();
     for (size_t i = 0; i < msg->name.size(); ++i) {
-      if (msg->name[i] == "dobot_cr5") {
-        offset_x = msg->pose[i].position.x;
-        offset_y = msg->pose[i].position.y;
-        offset_z = msg->pose[i].position.z;
+      if (msg->name[i] == robot_name) {
+        tf2::Transform robot_tf;
+        tf2::fromMsg(msg->pose[i], robot_tf);
+        robot_tf_inv = robot_tf.inverse();
         break;
       }
     }
@@ -179,36 +182,70 @@ private:
 
       geometry_msgs::msg::Point low_left;
       geometry_msgs::msg::Point top_right;
-      geometry_msgs::msg::Point global_pos = msg->pose[i].position;
+
+      tf2::Vector3 gz_corners[8];
 
       // Use real absolute Bounding Boxes from Gazebo plugin if available
       if (model_bboxes_.find(model_name) != model_bboxes_.end()) {
-        low_left.x = model_bboxes_[model_name].first.x - offset_x;
-        low_left.y = model_bboxes_[model_name].first.y - offset_y;
-        low_left.z = model_bboxes_[model_name].first.z - offset_z;
+        const auto & bmin = model_bboxes_[model_name].first;
+        const auto & bmax = model_bboxes_[model_name].second;
 
-        top_right.x = model_bboxes_[model_name].second.x - offset_x;
-        top_right.y = model_bboxes_[model_name].second.y - offset_y;
-        top_right.z = model_bboxes_[model_name].second.z - offset_z;
+        gz_corners[0] = tf2::Vector3(bmin.x, bmin.y, bmin.z);
+        gz_corners[1] = tf2::Vector3(bmax.x, bmin.y, bmin.z);
+        gz_corners[2] = tf2::Vector3(bmin.x, bmax.y, bmin.z);
+        gz_corners[3] = tf2::Vector3(bmax.x, bmax.y, bmin.z);
+        gz_corners[4] = tf2::Vector3(bmin.x, bmin.y, bmax.z);
+        gz_corners[5] = tf2::Vector3(bmax.x, bmin.y, bmax.z);
+        gz_corners[6] = tf2::Vector3(bmin.x, bmax.y, bmax.z);
+        gz_corners[7] = tf2::Vector3(bmax.x, bmax.y, bmax.z);
       } else {
         // Fallback to dummy sizes if plugin data is missing
         double dim_x = this->get_parameter("dummy_size_x").as_double();
         double dim_y = this->get_parameter("dummy_size_y").as_double();
         double dim_z = this->get_parameter("dummy_size_z").as_double();
-        
-        // Apply offset to fallback global_pos
-        global_pos.x -= offset_x;
-        global_pos.y -= offset_y;
-        global_pos.z -= offset_z;
 
-        low_left.x = global_pos.x - (dim_x / 2.0);
-        low_left.y = global_pos.y - (dim_y / 2.0);
-        low_left.z = global_pos.z;
+        double gz_min_x = msg->pose[i].position.x - (dim_x / 2.0);
+        double gz_min_y = msg->pose[i].position.y - (dim_y / 2.0);
+        double gz_min_z = msg->pose[i].position.z;
+        double gz_max_x = msg->pose[i].position.x + (dim_x / 2.0);
+        double gz_max_y = msg->pose[i].position.y + (dim_y / 2.0);
+        double gz_max_z = msg->pose[i].position.z + dim_z;
 
-        top_right.x = global_pos.x + (dim_x / 2.0);
-        top_right.y = global_pos.y + (dim_y / 2.0);
-        top_right.z = global_pos.z + dim_z;
+        gz_corners[0] = tf2::Vector3(gz_min_x, gz_min_y, gz_min_z);
+        gz_corners[1] = tf2::Vector3(gz_max_x, gz_min_y, gz_min_z);
+        gz_corners[2] = tf2::Vector3(gz_min_x, gz_max_y, gz_min_z);
+        gz_corners[3] = tf2::Vector3(gz_max_x, gz_max_y, gz_min_z);
+        gz_corners[4] = tf2::Vector3(gz_min_x, gz_min_y, gz_max_z);
+        gz_corners[5] = tf2::Vector3(gz_max_x, gz_min_y, gz_max_z);
+        gz_corners[6] = tf2::Vector3(gz_min_x, gz_max_y, gz_max_z);
+        gz_corners[7] = tf2::Vector3(gz_max_x, gz_max_y, gz_max_z);
       }
+
+      // Transform the 8 corners of the Gazebo AABB into the robot-centered MoveIt frame
+      double min_x = std::numeric_limits<double>::infinity();
+      double min_y = std::numeric_limits<double>::infinity();
+      double min_z_val = std::numeric_limits<double>::infinity();
+      double max_x = -std::numeric_limits<double>::infinity();
+      double max_y = -std::numeric_limits<double>::infinity();
+      double max_z_val = -std::numeric_limits<double>::infinity();
+
+      for (int c = 0; c < 8; ++c) {
+        tf2::Vector3 pt_moveit = robot_tf_inv * gz_corners[c];
+        min_x = std::min(min_x, pt_moveit.x());
+        min_y = std::min(min_y, pt_moveit.y());
+        min_z_val = std::min(min_z_val, pt_moveit.z());
+        max_x = std::max(max_x, pt_moveit.x());
+        max_y = std::max(max_y, pt_moveit.y());
+        max_z_val = std::max(max_z_val, pt_moveit.z());
+      }
+
+      low_left.x = min_x;
+      low_left.y = min_y;
+      low_left.z = min_z_val;
+
+      top_right.x = max_x;
+      top_right.y = max_y;
+      top_right.z = max_z_val;
 
       // Volumetric Frustum Culling: test the 8 corners of the 3D AABB against all 6 frustum planes
       geometry_msgs::msg::Point corners_world[8];
