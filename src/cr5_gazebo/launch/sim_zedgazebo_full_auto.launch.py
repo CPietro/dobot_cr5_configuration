@@ -4,10 +4,12 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+from moveit_configs_utils import MoveItConfigsBuilder
 
 
 def generate_launch_description():
     pkg_gazebo = FindPackageShare('cr5_gazebo')
+    moveit_config = MoveItConfigsBuilder("cr5_robot", package_name="cr5_moveit").to_moveit_configs()
 
     world_arg = DeclareLaunchArgument(
         'world',
@@ -41,7 +43,7 @@ def generate_launch_description():
         executable='move_cr5_node_modular',
         name='move_cr5_node_modular',
         output='screen',
-        parameters=[{'use_sim_time': True}]
+        parameters=[{'use_sim_time': True}, moveit_config.robot_description_kinematics]
     )
 
     return LaunchDescription([
