@@ -142,6 +142,14 @@ void checkWorkspace(custom_messages::msg::Object& plant, const custom_messages::
     geometry_msgs::msg::Point low = ws_limits.low_left;
     geometry_msgs::msg::Point top = ws_limits.top_right;
 
+    // Dobot CR5 shoulder joint (joint2) is at (0.0, 0.0, 0.147) in base_link frame.
+    // Dobot CR5 effective reach with camera pointing orientation is ~0.80 m; inner dead-zone around base axis is r_xy < 0.15 m.
+    const double shoulder_x = 0.0;
+    const double shoulder_y = 0.0;
+    const double shoulder_z = 0.147;
+    const double max_reach = 0.80;
+    const double min_r_xy = 0.15;
+
     for (auto& trajectory : plant.possible_trajectories){
         for (auto& point : trajectory.circumference) {
             // If a point is already marked as non-optimal, don't change it back to optimal
@@ -150,6 +158,18 @@ void checkWorkspace(custom_messages::msg::Object& plant, const custom_messages::
                     point.point.y < low.y || point.point.y > top.y ||
                     point.point.z < low.z || point.point.z > top.z) {
                     point.optimality = 0.0; // Mark as non-optimal
+                    continue;
+                }
+
+                // 3D spherical reachability filter centered at Dobot CR5 shoulder joint2
+                double dx = point.point.x - shoulder_x;
+                double dy = point.point.y - shoulder_y;
+                double dz = point.point.z - shoulder_z;
+                double dist_shoulder = std::sqrt(dx * dx + dy * dy + dz * dz);
+                double r_xy = std::sqrt(point.point.x * point.point.x + point.point.y * point.point.y);
+
+                if (dist_shoulder > max_reach || r_xy < min_r_xy) {
+                    point.optimality = 0.0; // Mark as non-optimal
                 }
             }
         }
@@ -157,6 +177,7 @@ void checkWorkspace(custom_messages::msg::Object& plant, const custom_messages::
 }
 
 void pointsInsideOtherObjects(custom_messages::msg::Object& plant, const custom_messages::msg::Map& map) { // check that points are not inside other objects (including itself)
+    const float safety_margin = 0.12f;
 
     for (auto& object : map.objects){
         for (auto& trajectory : plant.possible_trajectories) {
@@ -172,11 +193,16 @@ void pointsInsideOtherObjects(custom_messages::msg::Object& plant, const custom_
                 for (auto& point : trajectory.circumference) {
                     // If a point is already marked as non-optimal, don't change it back to optimal
                     if (point.optimality != 0.0) {
-                        geometry_msgs::msg::Point low = object.shape.low_left;
-                        geometry_msgs::msg::Point top = object.shape.top_right;
-                        if (point.point.x >= low.x && point.point.x <= top.x &&
-                            point.point.y >= low.y && point.point.y <= top.y &&
-                            point.point.z >= low.z && point.point.z <= top.z) {
+                        float low_x = object.shape.low_left.x - safety_margin;
+                        float low_y = object.shape.low_left.y - safety_margin;
+                        float low_z = object.shape.low_left.z - safety_margin;
+                        float top_x = object.shape.top_right.x + safety_margin;
+                        float top_y = object.shape.top_right.y + safety_margin;
+                        float top_z = object.shape.top_right.z + safety_margin;
+
+                        if (point.point.x >= low_x && point.point.x <= top_x &&
+                            point.point.y >= low_y && point.point.y <= top_y &&
+                            point.point.z >= low_z && point.point.z <= top_z) {
                             point.optimality = 0.0; // Mark as non-optimal
                         }
                     }
