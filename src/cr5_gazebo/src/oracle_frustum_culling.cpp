@@ -128,13 +128,21 @@ private:
     const std::string robot_name = this->get_parameter("robot_model_name").as_string();
     tf2::Transform robot_tf_inv;
     robot_tf_inv.setIdentity();
-    for (size_t i = 0; i < msg->name.size(); ++i) {
+    bool robot_found = false;
+    for (size_t i = 0; i < msg->name.size() && i < msg->pose.size(); ++i) {
       if (msg->name[i] == robot_name) {
         tf2::Transform robot_tf;
         tf2::fromMsg(msg->pose[i], robot_tf);
         robot_tf_inv = robot_tf.inverse();
+        robot_found = true;
         break;
       }
+    }
+    if (!robot_found) {
+      RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
+        "Robot model '%s' not found in /gazebo/model_states; skipping publish.",
+        robot_name.c_str());
+      return;
     }
 
     std::string global_frame = this->get_parameter("global_frame").as_string();
