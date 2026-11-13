@@ -41,7 +41,6 @@ def generate_launch_description():
     move_cr5_node = Node(
         package='cr5_moveit_cpp_demo',
         executable='move_cr5_node_modular',
-        name='move_cr5_node_modular',
         output='screen',
         parameters=[{'use_sim_time': True}, moveit_config.robot_description_kinematics]
     )

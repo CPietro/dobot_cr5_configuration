@@ -11,7 +11,7 @@
 int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
     
-    auto node = rclcpp::Node::make_shared("cr5_moveit_cpp_planner");
+    auto node = rclcpp::Node::make_shared("move_cr5_node_modular");
     
     RCLCPP_INFO(node->get_logger(), "=========================================================");
     RCLCPP_INFO(node->get_logger(), "                CR5 MOTION CONTROLLER                   ");
