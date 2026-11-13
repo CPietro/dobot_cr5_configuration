@@ -123,7 +123,8 @@ private:
     // Get Transform from World to Camera at the image capture timestamp (fallback to latest)
     geometry_msgs::msg::TransformStamped t;
     try {
-      // Assuming map coordinates are in "world"
+      // /Boing boxes are expressed in the TF "world" frame (URDF root = robot model frame),
+      // matching the oracle's default `global_frame`. This is NOT the Gazebo world frame.
       t = tf_buffer_->lookupTransform(
         camera_frame, "world",
         rclcpp::Time(image_msg->header.stamp),

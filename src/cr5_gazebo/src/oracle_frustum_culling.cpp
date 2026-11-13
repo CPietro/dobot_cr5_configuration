@@ -1,5 +1,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
+#include <rcl_interfaces/msg/parameter_descriptor.hpp>
 #include <gazebo_msgs/msg/model_states.hpp>
 #include <custom_messages/msg/map.hpp>
 #include <custom_messages/msg/object.hpp>
@@ -29,7 +30,20 @@ public:
   : Node("oracle_frustum_culling", options)
   {
     // Parameters initialization
-    this->declare_parameter<std::string>("global_frame", "world");
+    // NOTE on frames: two different frames are called "world" in this system.
+    //  - Gazebo world: scene origin; /gazebo/model_states and /gazebo/model_bboxes use it.
+    //  - TF/MoveIt world: URDF root link; it coincides with the frame of the robot MODEL in
+    //    Gazebo (i.e. it sits at the robot spawn pose, e.g. (0.2, -0.6, 0) in Gazebo coords).
+    // This node converts Gazebo-world boxes into the robot model frame by applying the inverse
+    // of the robot model pose, then uses TF from `global_frame` to the camera for culling.
+    // Hence `global_frame` MUST be the TF frame that coincides with the Gazebo robot model
+    // frame (the URDF root, "world"); any other value yields a silent, wrong /Boing map.
+    rcl_interfaces::msg::ParameterDescriptor global_frame_desc;
+    global_frame_desc.description =
+      "TF frame coinciding with the Gazebo frame of the robot model (URDF root link). "
+      "Output boxes are expressed in this frame. Do NOT set it to e.g. base_link: "
+      "the conversion from Gazebo world relies on this equivalence.";
+    this->declare_parameter<std::string>("global_frame", "world", global_frame_desc);
     this->declare_parameter<std::string>("camera_frame", "zed_optical_link");
     this->declare_parameter<std::string>("robot_model_name", "dobot_cr5");
     
@@ -109,7 +123,8 @@ private:
     }
     last_publish_time_ = current_time;
 
-    // Find the robot's spawn pose to align Gazebo World with MoveIt World
+    // Find the robot model pose in the Gazebo world: its inverse maps Gazebo-world points into
+    // the robot model frame, which is the TF `global_frame` (see note in the constructor).
     const std::string robot_name = this->get_parameter("robot_model_name").as_string();
     tf2::Transform robot_tf_inv;
     robot_tf_inv.setIdentity();
@@ -137,7 +152,8 @@ private:
 
     custom_messages::msg::Map out_map;
 
-    // In MoveIt world coordinates, the robot base is at (0, 0, 0) and objects are shifted by -offset.
+    // Output is expressed in `global_frame` (robot model frame; with the default xacro
+    // x/y/z = 0 the robot base is at its origin).
     // Workspace limits are already relative to the robot base, so no offset addition is needed.
     out_map.work_space.low_left.x = this->get_parameter("ws_x_min").as_double();
     out_map.work_space.low_left.y = this->get_parameter("ws_y_min").as_double();
@@ -299,7 +315,7 @@ private:
         continue;
       }
 
-      // Object passed culling, create bounding box in GLOBAL coordinates
+      // Object passed culling: store its AABB in `global_frame` (robot model frame, NOT Gazebo world)
       custom_messages::msg::Object obj;
       obj.target = is_target;
       

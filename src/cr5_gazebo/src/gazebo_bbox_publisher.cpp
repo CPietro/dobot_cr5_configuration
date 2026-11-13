@@ -1,4 +1,6 @@
 #include <cmath>
+#include <functional>
+#include <string>
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
 #include <gazebo_ros/node.hpp>
@@ -17,12 +19,23 @@ public:
   {
     world_ = _world;
     ros_node_ = gazebo_ros::Node::Get(_sdf);
+
+    // The AABBs are expressed in the GAZEBO world frame (scene origin), which is NOT the
+    // TF/MoveIt "world" frame: the latter is the URDF root link and sits where the robot is
+    // spawned (e.g. (0.2, -0.6, 0) in Gazebo coordinates). Labelling the markers "world"
+    // would make TF consumers (e.g. RViz) draw them shifted by the robot spawn offset, so a
+    // distinct frame name is used by default. Override with <frame_id> in the plugin SDF.
+    if (_sdf && _sdf->HasElement("frame_id")) {
+      frame_id_ = _sdf->Get<std::string>("frame_id");
+    }
+
     pub_ = ros_node_->create_publisher<visualization_msgs::msg::MarkerArray>("/gazebo/model_bboxes", 10);
     joint_state_pub_ = ros_node_->create_publisher<sensor_msgs::msg::JointState>("/joint_states", 10);
     update_connection_ = event::Events::ConnectWorldUpdateBegin(std::bind(&GazeboBBoxPublisher::OnUpdate, this));
     last_publish_time_ = world_->SimTime();
     max_sim_time_ = world_->SimTime();
-    RCLCPP_INFO(ros_node_->get_logger(), "Gazebo BBox Publisher Plugin loaded (Pure World AABB).");
+    RCLCPP_INFO(ros_node_->get_logger(),
+      "Gazebo BBox Publisher Plugin loaded (Gazebo world AABB, frame_id='%s').", frame_id_.c_str());
   }
 
   void OnUpdate()
@@ -64,7 +77,7 @@ public:
     for (auto const &model : models) {
       if (!model) continue;
       
-      // BoundingBox() returns the AABB in the WORLD coordinate frame!
+      // BoundingBox() returns the AABB in the GAZEBO world frame (scene origin), see frame_id_.
       ignition::math::AxisAlignedBox world_bbox = model->BoundingBox();
       const auto &bmin = world_bbox.Min();
       const auto &bmax = world_bbox.Max();
@@ -80,7 +93,7 @@ public:
       }
       
       visualization_msgs::msg::Marker marker;
-      marker.header.frame_id = "world";
+      marker.header.frame_id = frame_id_;
       marker.header.stamp = ros_node_->now();
       marker.ns = model->GetName();
       marker.id = id++;
@@ -117,6 +130,7 @@ private:
   event::ConnectionPtr update_connection_;
   common::Time last_publish_time_;
   common::Time max_sim_time_;
+  std::string frame_id_{"gazebo_world"};
 };
 
 GZ_REGISTER_WORLD_PLUGIN(GazeboBBoxPublisher)
