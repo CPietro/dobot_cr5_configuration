@@ -22,12 +22,11 @@
 *.out
 *.synctex.gz
 *.toc
-# Se decidi di ignorare anche il PDF finale della tesi generato in automatico:
 # .pdf
 
 # ========================
 # Misc
 # ========================
 *.gv
-/tesi_unimi_dobot_cr5.pdf
+/thesis-veneroni/tesi_unimi_dobot_cr5.pdf
 **/docs/internal
